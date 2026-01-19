@@ -17,8 +17,14 @@ function App() {
         <div className="App">
           <Navbar />
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route 
+              path="/login" 
+              element={<Login />} 
+            />
+            <Route 
+              path="/register" 
+              element={<Register />} 
+            />
             <Route 
               path="/" 
               element={
@@ -52,4 +58,5 @@ function App() {
 }
 
 export default App;
+
 

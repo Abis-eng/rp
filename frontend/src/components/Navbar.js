@@ -19,12 +19,17 @@ const Navbar = () => {
           🍳 Recipe App
         </Link>
         <div className="navbar-links">
-          {user && (
+          {user ? (
             <>
               <Link to="/" className="navbar-link">Home</Link>
               <Link to="/favorites" className="navbar-link">My Favorites</Link>
               <span className="navbar-user">Welcome, {user.name}</span>
               <button onClick={handleLogout} className="btn btn-danger">Logout</button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="navbar-link">Login</Link>
+              <Link to="/register" className="navbar-link">Register</Link>
             </>
           )}
         </div>
@@ -34,4 +39,5 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
 

@@ -73,12 +73,31 @@ router.post('/generate', async (req, res) => {
       );
     }
 
+    if (recipes.length === 0) {
+      return res.status(404).json({ 
+        message: 'No recipes found with those ingredients. Try different ingredients.' 
+      });
+    }
+
     res.json(recipes);
   } catch (error) {
     console.error('Recipe generation error:', error.message);
+    
+    if (error.response?.status === 401) {
+      return res.status(500).json({ 
+        message: 'Invalid API key. Please check your Spoonacular API key in .env file.' 
+      });
+    }
+    
+    if (error.response?.status === 402) {
+      return res.status(500).json({ 
+        message: 'API quota exceeded. Please check your Spoonacular API plan.' 
+      });
+    }
+
     res.status(500).json({ 
-      message: 'Error generating recipes',
-      error: error.message 
+      message: 'Error generating recipes. Please try again later.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

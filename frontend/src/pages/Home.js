@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { AuthContext } from '../context/AuthContext';
 import './Home.css';
 
 const Home = () => {
+  const { user } = useContext(AuthContext);
   const [ingredients, setIngredients] = useState('');
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -22,12 +24,22 @@ const Home = () => {
 
     setLoading(true);
     try {
-      const ingredientsArray = ingredients.split(',').map(i => i.trim());
+      const ingredientsArray = ingredients.split(',').map(i => i.trim()).filter(i => i.length > 0);
+      if (ingredientsArray.length === 0) {
+        alert('Please enter at least one ingredient');
+        setLoading(false);
+        return;
+      }
       const response = await axios.post('/api/recipes/generate', { ingredients: ingredientsArray });
-      setRecipes(response.data);
+      if (response.data && response.data.length > 0) {
+        setRecipes(response.data);
+      } else {
+        alert('No recipes found with those ingredients. Try different ingredients.');
+      }
     } catch (error) {
       console.error('Error generating recipes:', error);
-      alert('Error generating recipes. Please try again.');
+      const errorMessage = error.response?.data?.message || 'Error generating recipes. Please check your API key and try again.';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -61,6 +73,9 @@ const Home = () => {
     <div className="container">
       <div className="home-header">
         <h1>Find Your Perfect Recipe</h1>
+        {user && (
+          <p className="welcome-message">Welcome back, {user.name}! 👋</p>
+        )}
         
         <div className="search-section">
           <div className="ingredient-input">
@@ -137,15 +152,25 @@ const Home = () => {
         </div>
       </div>
 
+      {recipes.length > 0 && !loading && (
+        <div className="recipes-count">
+          Found {recipes.length} recipe{recipes.length !== 1 ? 's' : ''}
+        </div>
+      )}
+
       <div className="recipes-grid">
         {recipes.length === 0 && !loading && (
           <div className="no-recipes">
-            <p>Enter ingredients or search for recipes to get started!</p>
+            <p>👨‍🍳 Enter ingredients or search for recipes to get started!</p>
+            <p className="no-recipes-hint">Try: chicken, tomatoes, onions or search for "pasta"</p>
           </div>
         )}
         
         {loading && (
-          <div className="loading">Loading recipes...</div>
+          <div className="loading">
+            <p>🔍 Searching for recipes...</p>
+            <p className="loading-hint">This may take a few seconds</p>
+          </div>
         )}
 
         {recipes.map((recipe) => (
@@ -175,4 +200,5 @@ const Home = () => {
 };
 
 export default Home;
+
 

@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
@@ -7,8 +7,16 @@ import './Auth.css';
 const Register = () => {
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
-  const { login } = useContext(AuthContext);
+  const [loading, setLoading] = useState(false);
+  const { login, token, loading: authLoading } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && token) {
+      navigate('/');
+    }
+  }, [token, authLoading, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -17,15 +25,41 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
+
+    // Validate password length
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await axios.post('/api/auth/register', formData);
-      login(response.data.token, response.data.user);
-      navigate('/');
+      if (response.data.token && response.data.user) {
+        login(response.data.token, response.data.user);
+        // Small delay to ensure state is updated
+        setTimeout(() => {
+          navigate('/', { replace: true });
+        }, 100);
+      } else {
+        setError('Invalid response from server');
+        setLoading(false);
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
+      console.error('Registration error:', err);
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      setLoading(false);
     }
   };
+
+  if (authLoading) {
+    return <div className="auth-container">Loading...</div>;
+  }
+
+  if (token) {
+    return null; // Will redirect via useEffect
+  }
 
   return (
     <div className="auth-container">
@@ -67,7 +101,9 @@ const Register = () => {
               className="input"
             />
           </div>
-          <button type="submit" className="btn btn-primary btn-block">Register</button>
+          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+            {loading ? 'Registering...' : 'Register'}
+          </button>
         </form>
         <p className="auth-switch">
           Already have an account? <Link to="/login">Login here</Link>
@@ -78,4 +114,5 @@ const Register = () => {
 };
 
 export default Register;
+
 

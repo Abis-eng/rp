@@ -16,8 +16,10 @@ const RecipeDetails = () => {
 
   useEffect(() => {
     fetchRecipe();
-    checkFavorite();
-  }, [id]);
+    if (token) {
+      checkFavorite();
+    }
+  }, [id, token]);
 
   const fetchRecipe = async () => {
     try {
@@ -33,11 +35,13 @@ const RecipeDetails = () => {
   };
 
   const checkFavorite = async () => {
+    if (!token) return;
     try {
       const response = await axios.get(`/api/favorites/check/${id}`);
       setIsFavorited(response.data.isFavorited);
     } catch (error) {
       console.error('Error checking favorite:', error);
+      setIsFavorited(false);
     }
   };
 
@@ -175,4 +179,5 @@ const RecipeDetails = () => {
 };
 
 export default RecipeDetails;
+
 

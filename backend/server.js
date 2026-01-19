@@ -5,6 +5,11 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
+// Check for required environment variables
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️  WARNING: JWT_SECRET not set in .env file. Using fallback secret (not secure for production!)');
+}
+
 const app = express();
 
 // Middleware
@@ -26,4 +31,5 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/recipe-ap
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
