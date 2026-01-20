@@ -6,12 +6,82 @@ const router = express.Router();
 const SPOONACULAR_API_KEY = process.env.SPOONACULAR_API_KEY || 'demo';
 const SPOONACULAR_BASE_URL = 'https://api.spoonacular.com/recipes';
 
+function normalizeIngredientName(s) {
+  return String(s || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function scoreRecipeByIngredients(recipe, inputSet) {
+  const recipeSet = new Set(
+    (recipe.ingredients || []).map(i => normalizeIngredientName(i.name)).filter(Boolean)
+  );
+  let overlap = 0;
+  for (const ing of inputSet) {
+    if (recipeSet.has(ing)) overlap += 1;
+  }
+  const coverage = inputSet.size ? overlap / inputSet.size : 0;
+  // score weights: overlap first, then coverage
+  return overlap * 10 + coverage;
+}
+
 // Helper function to map difficulty
 const mapDifficulty = (readyInMinutes) => {
   if (readyInMinutes <= 30) return 'Easy';
   if (readyInMinutes <= 60) return 'Medium';
   return 'Hard';
 };
+
+// Match recipes from ADMIN database using ingredients (no Spoonacular needed)
+// returns sorted matches + random picks from top results
+router.post('/match', async (req, res) => {
+  try {
+    const { ingredients, limit = 10, random = 3 } = req.body;
+
+    if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
+      return res.status(400).json({ message: 'Please provide ingredients array' });
+    }
+
+    const inputSet = new Set(
+      ingredients.map(normalizeIngredientName).filter(Boolean)
+    );
+
+    const all = await Recipe.find({ source: 'admin' }).limit(500);
+    if (all.length === 0) {
+      return res.status(404).json({ message: 'No admin recipes found. Admin must add recipes first.' });
+    }
+
+    const scored = all
+      .map(r => ({ r, score: scoreRecipeByIngredients(r, inputSet) }))
+      .filter(x => x.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    const top = scored.slice(0, Math.max(1, Number(limit) || 10)).map(x => x.r);
+    if (top.length === 0) {
+      return res.status(404).json({ message: 'No similar recipes found for your ingredients.' });
+    }
+
+    // random picks from top
+    const randomCount = Math.min(Number(random) || 0, top.length);
+    const picks = [];
+    const used = new Set();
+    while (picks.length < randomCount) {
+      const idx = Math.floor(Math.random() * top.length);
+      if (used.has(idx)) continue;
+      used.add(idx);
+      picks.push(top[idx]);
+    }
+
+    return res.json({
+      matches: top,
+      random: picks
+    });
+  } catch (e) {
+    return res.status(500).json({ message: e.message });
+  }
+});
 
 // Generate recipes from ingredients
 router.post('/generate', async (req, res) => {

@@ -23,6 +23,9 @@ const Navbar = () => {
             <>
               <Link to="/" className="navbar-link">Home</Link>
               <Link to="/favorites" className="navbar-link">My Favorites</Link>
+              {user.role === 'admin' && (
+                <Link to="/admin" className="navbar-link">Admin</Link>
+              )}
               <span className="navbar-user">Welcome, {user.name}</span>
               <button onClick={handleLogout} className="btn btn-danger">Logout</button>
             </>
@@ -30,6 +33,7 @@ const Navbar = () => {
             <>
               <Link to="/login" className="navbar-link">Login</Link>
               <Link to="/register" className="navbar-link">Register</Link>
+              <Link to="/admin/login" className="navbar-link">Admin Login</Link>
             </>
           )}
         </div>

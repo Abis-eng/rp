@@ -43,11 +43,22 @@ const recipeSchema = new mongoose.Schema({
   }],
   sourceUrl: {
     type: String
+  },
+  source: {
+    type: String,
+    enum: ['admin', 'spoonacular'],
+    default: 'admin'
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true
 });
 
 module.exports = mongoose.model('Recipe', recipeSchema);
+
+
 
 

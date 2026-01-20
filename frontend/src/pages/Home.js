@@ -30,15 +30,27 @@ const Home = () => {
         setLoading(false);
         return;
       }
-      const response = await axios.post('/api/recipes/generate', { ingredients: ingredientsArray });
-      if (response.data && response.data.length > 0) {
-        setRecipes(response.data);
+      const response = await axios.post('/api/recipes/match', { ingredients: ingredientsArray, limit: 10, random: 3 });
+      const matches = response.data?.matches || [];
+      const random = response.data?.random || [];
+
+      // show random first (unique), then the rest
+      const seen = new Set();
+      const combined = [];
+      for (const r of [...random, ...matches]) {
+        if (!r || seen.has(r.recipeId)) continue;
+        seen.add(r.recipeId);
+        combined.push(r);
+      }
+
+      if (combined.length > 0) {
+        setRecipes(combined);
       } else {
-        alert('No recipes found with those ingredients. Try different ingredients.');
+        alert('No similar recipes found. Ask admin to add more recipes.');
       }
     } catch (error) {
       console.error('Error generating recipes:', error);
-      const errorMessage = error.response?.data?.message || 'Error generating recipes. Please check your API key and try again.';
+      const errorMessage = error.response?.data?.message || 'Error generating recipes.';
       alert(errorMessage);
     } finally {
       setLoading(false);
